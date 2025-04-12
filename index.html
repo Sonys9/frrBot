@@ -107,9 +107,22 @@
             <select class="select" id="groups" multiple="multiple"></select>
             <label class="label">Задержка между сообщениями (секунды)</label>
             <input class="input" id="cooldown">
+            <label class="label">Задержка после отправки сообщений</label>
+            <input class="input" id="endcooldown">
+            <label class="label">Задержка перед удалением сообщения</label>
+            <input class="input" id="deletecooldown">
             <label class="label">Текст для отправки (поддержка HTML)</label>
-            <input class="input" id="text">
+            <textarea class="input" id="text"></textarea>
             <button class="button" id="send">Отправить</button>
+            <input type="checkbox" id="autosend" name="autosend" style="margin-top:5px;">
+            <label for="autosend" style="color:white">Автоматически отправлять</label>
+            <br>
+            <input type="checkbox" id="randommessages" name="randommessages" style="margin-top:-35px;">
+            <label for="randommessages" style="color:white">Файл с сообщениями</label>
+            <br>
+            <input type="checkbox" id="deletemessages" name="deletemessages" style="margin-top:-35px;">
+            <label for="deletemessages" style="color:white">Удалять сообщения</label>
+            <input type="file" id="file" accept=".txt" class="label">
             <button class="button" id="update">Обновить список групп</button>
         </div>
         <script>
@@ -120,9 +133,15 @@
             });
             const groups_select = document.getElementById('groups');
             const cooldown = document.getElementById('cooldown');
+            const endcooldown = document.getElementById('endcooldown');
             const send = document.getElementById('send');
             const text = document.getElementById('text');
             const update = document.getElementById('update');
+            const autosend = document.getElementById('autosend');
+            const randommessages = document.getElementById('randommessages');
+            const deletemessages = document.getElementById('deletemessages');
+            const deletecooldown = document.getElementById('deletecooldown');
+            const file = document.getElementById('file');
             
             function add_elements(){
                 fetch('/get_groups').then(response => response.json()).then(all_groups => {
@@ -141,6 +160,12 @@
                 add_elements();
             })
 
+            randommessages.addEventListener('click', ()=>{
+                if(randommessages.checked) {
+                    file.click();
+                }
+            })
+
             function checksending(){
                 fetch('/get_info').then(response => response.json()).then(info => {
                 if(info['sending']){setTimeout(checksending, 1000)} else {
@@ -157,17 +182,59 @@
                     var selected_cooldown = cooldown.value;
                     var selected_groups = $('#groups').select2('data');
                     var text_to_send = text.value;
+                    var selected_endcooldown = endcooldown.value;
+                    var selected_deletecooldown = deletecooldown.value;
                     if(isNaN(selected_cooldown) || isNaN(parseFloat(selected_cooldown)) || Number(selected_cooldown)<0) {
                         alert('Вы не ввели правильную задержку');
                         return;
                     }
+                    if((isNaN(selected_endcooldown) || isNaN(parseFloat(selected_endcooldown)) || Number(selected_endcooldown)<0) && autosend.checked) {
+                        alert('Вы не ввели правильную задержку');
+                        return;
+                    }
+                    if(!autosend.checked){selected_endcooldown=0;}
+                    if((isNaN(selected_deletecooldown) || isNaN(parseFloat(selected_deletecooldown)) || Number(selected_deletecooldown)<0) && deletemessages.checked) {
+                        alert('Вы не ввели правильную задержку');
+                        return;
+                    }
+                    if(!deletemessages.checked){selected_deletecooldown=0;}
                     if($('#groups option:selected').length==0) {
                         alert('Вы не выбрали группы');
                         return;
                     }
-                    if(text_to_send.trim()=='') {
+                    if(text_to_send.trim()=='' && !randommessages.checked) {
                         alert('Вы не ввели текст');
                         return;
+                    }
+                    if(randommessages.checked && !file.files[0]){
+                        alert('Выберите файл с сообщениями');
+                    } else if(randommessages.checked) {
+                        const reader = new FileReader();
+                        reader.onload = function(event) {
+                            var content = event.target.result;
+                            messages = JSON.stringify(content.split('===================')); 
+                            send.style.backgroundColor = '#cc1f00';
+                            send.textContent = 'Остановить';
+                            fetch('/send_messages', 
+                                {
+                                    method:'POST', 
+                                    body: JSON.stringify({
+                                        groups: selected_groups,
+                                        cooldown: selected_cooldown,
+                                        text: text_to_send,
+                                        messages: messages,
+                                        auto_send: autosend.checked,
+                                        endcooldown: selected_endcooldown,
+                                        deletecooldown: selected_deletecooldown
+                                    })
+                                }
+                            ).then(response => response.json()).then(r => {
+                                send.style.backgroundColor = '#0077FF';
+                                send.textContent = 'Отправить';
+                            })
+                        };
+                        reader.readAsText(file.files[0]); // ЕБАННАЯ АСИНХРОННАЯ ХУЙНЯ МАМУ ТВОЮ ЕБАЛ Я НЕ ХОТЕЛ ДУБЛИРОВАТЬ НО ПРИШЛОСЬ :()
+                        
                     }
                     send.style.backgroundColor = '#cc1f00';
                     send.textContent = 'Остановить';
@@ -177,7 +244,11 @@
                             body: JSON.stringify({
                                 groups: selected_groups,
                                 cooldown: selected_cooldown,
-                                text: text_to_send
+                                text: text_to_send,
+                                messages: null,
+                                auto_send: autosend.checked,
+                                endcooldown: selected_endcooldown,
+                                deletecooldown: selected_deletecooldown
                             })
                         }
                     ).then(response => response.json()).then(r => {
@@ -197,6 +268,10 @@
             fetch('/get_info').then(response => response.json()).then(info => {
                 cooldown.value = info['cooldown'];
                 text.value = info['text'];
+                endcooldown.value = info['endcooldown'];
+                deletecooldown.value = info['deletecooldown'];
+                autosend.checked = info['autosend'];
+                
                 if(info['sending']) {
                     send.style.backgroundColor = '#cc1f00';
                     send.textContent = 'Остановить';
