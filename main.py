@@ -52,7 +52,7 @@ async def delete_message(time, msg, channelid):
     await client.delete_messages(entity=channelid, message_ids=[msg.id])
 
 async def send_messages_handler(data):
-    global sending, cooldown_send, text_send
+    global sending, cooldown_send, text_send, deletecooldown_send, endcooldown_send, autosend
     text_send = data['text']
     sending = True
     cooldown_send = data['cooldown']
