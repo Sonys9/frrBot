@@ -3,13 +3,16 @@
 Необходимо ввести API ID + API HASH в config.json
 
 Запуск (windows):
-1. Скачайте архив с файлами и распакуйте в любую папку
-2. В этой папке откройте консоль, введите pip install -r requirements
-3. Запустите через python main.py
+
+1. Скачайте Python 3.1x
+2. Скачайте архив с файлами и распакуйте в любую папку
+3. В этой папке откройте консоль, введите pip install -r requirements
+4. Запустите через python main.py
 
 Запуск (linux):
+
 1. Откройте консоль
-2. Пропишите git clone https://github.com/Sonys9/frrBot && cd frrBot && python3 -m pip install -r requirements --break-system-packages && python3 main.py
+2. Пропишите apt update && apt install python3 git && git clone https://github.com/Sonys9/frrBot && cd frrBot && python3 -m pip install -r requirements --break-system-packages && python3 main.py
 
 Функционал:
 1. Рассылка сообщения по всем чатам
