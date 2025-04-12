@@ -68,16 +68,16 @@ async def send_messages_handler(data):
             try: 
                 if not messages: 
                     msg = await client.send_message(int(group['id']), text_send, parse_mode='HTML')
-                    if deletecooldown_send != 0: asyncio.create_task(delete_message(int(deletecooldown_send), msg, int(group['id'])))
+                    if deletecooldown_send != 0: asyncio.create_task(delete_message(float(deletecooldown_send), msg, int(group['id'])))
                 else: 
                     msg = await client.send_message(int(group['id']), random.choice(messages), parse_mode='HTML')
-                    if deletecooldown_send != 0: asyncio.create_task(delete_message(int(deletecooldown_send), msg, int(group['id'])))
+                    if deletecooldown_send != 0: asyncio.create_task(delete_message(float(deletecooldown_send), msg, int(group['id'])))
                 print('Отправлено сообщение')
             except Exception as e: print(e)
-            await asyncio.sleep(int(cooldown_send))
+            await asyncio.sleep(float(cooldown_send))
         if not autosend: break
         if not sending: break
-        await asyncio.sleep(int(endcooldown_send))
+        await asyncio.sleep(float(endcooldown_send))
     sending = False
     return {'success': True}
 
