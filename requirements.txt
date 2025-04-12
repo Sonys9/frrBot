@@ -3,3 +3,4 @@ telethon
 colorama
 nest_asyncio
 asyncio
+tgcrypto
