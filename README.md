@@ -1,5 +1,6 @@
 # frrBot
 Рассыльщик на Telethon + Flask
+Необходимо ввести API ID + API HASH в config.json
 
 Функционал:
 1. Рассылка сообщения по всем чатам
