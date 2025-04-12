@@ -1,0 +1,208 @@
+<!DOCTYPE html>
+<!--[if lt IE 7]>      <html class="no-js lt-ie9 lt-ie8 lt-ie7"> <![endif]-->
+<!--[if IE 7]>         <html class="no-js lt-ie9 lt-ie8"> <![endif]-->
+<!--[if IE 8]>         <html class="no-js lt-ie9"> <![endif]-->
+<!--[if gt IE 8]>      <html class="no-js"> <!--<![endif]-->
+<html>
+    <head>
+        <meta charset="utf-8">
+        <meta http-equiv="X-UA-Compatible" content="IE=edge">
+        <title>frrBot Панель</title>
+        <meta name="description" content="frrBot Панель">
+        <meta name="viewport" content="width=device-width, initial-scale=1">
+        <link href="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/css/select2.min.css" rel="stylesheet" />
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/jquery/3.6.0/jquery.min.js"></script>
+        <script src="https://cdnjs.cloudflare.com/ajax/libs/select2/4.0.13/js/select2.min.js"></script>
+        <style>
+            body {
+                background-color: #141414;
+                display: flex;
+                justify-content: center;
+                align-items: center;
+                height: 100vh;
+                margin: 0;
+                font-family: 'Calibri', sans-serif;
+            }
+            .div {
+                background-color: #222222;
+                border-radius: 12px;
+                padding: 20px;
+                box-shadow: 0 4px 8px rgba(0, 0, 0, 0.2);
+            }
+            .select {
+                background-color: #222222;
+                color: white;
+                border-radius: 10px;
+                border: 1px solid #363738;
+                width: 300px;
+            }
+            .select2-selection__rendered {
+                max-height: 50px;
+                overflow-y: auto;
+                background-color: #222222;
+                color: #4d4c4c;
+            }
+            .select2-results {
+                background-color: #222222;
+                color: white;
+            }
+            .select2-search input {
+                background-color: #222222;
+                color: white;
+            }
+            .select2-search {
+                background-color: #222222;
+                color: white;
+            }
+            .input {
+                display: flex;
+                align-items: center;
+                flex-grow: 1;
+                background-color: #222222;
+                border-radius: 10px;
+                border: 1px solid #363738;
+                padding: 5px;
+                margin-top: 10px;
+                width: 96%;
+                display: flex;
+                align-items: center;
+                color:White;
+                outline: none;
+            }
+            .label {
+                color:white;
+                display: flex; 
+                margin-top:5px;
+            }
+            .button { 
+                display: flex; 
+                justify-content: center; 
+                align-items: center; 
+                background-color: #0077FF;
+                color: white;
+                border: 0px;
+                border-radius: 10px;
+                padding: 3px 20px;
+                font-weight: 700;
+                font-size: 14px;
+                width: 100%;
+                height: 35px;
+                margin-top: 15px;
+            }
+            .h1 {
+                color:white;
+                display: flex; 
+                justify-content: center; 
+                align-items: center; 
+                font-size:25px
+            }
+        </style>
+    </head>
+    <body>
+        <!--[if lt IE 7]>
+            <p class="browsehappy">You are using an <strong>outdated</strong> browser. Please <a href="#">upgrade your browser</a> to improve your experience.</p>
+        <![endif]-->
+        <div class="div">
+            <label class="label">Нажмите для выбора групп</label>
+            <select class="select" id="groups" multiple="multiple"></select>
+            <label class="label">Задержка между сообщениями (секунды)</label>
+            <input class="input" id="cooldown">
+            <label class="label">Текст для отправки (поддержка HTML)</label>
+            <input class="input" id="text">
+            <button class="button" id="send">Отправить</button>
+            <button class="button" id="update">Обновить список групп</button>
+        </div>
+        <script>
+            $(document).ready(function() {
+                $('#groups').select2({
+                    closeOnSelect: false
+                });
+            });
+            const groups_select = document.getElementById('groups');
+            const cooldown = document.getElementById('cooldown');
+            const send = document.getElementById('send');
+            const text = document.getElementById('text');
+            const update = document.getElementById('update');
+            
+            function add_elements(){
+                fetch('/get_groups').then(response => response.json()).then(all_groups => {
+                    console.log(all_groups.length);
+                    for(var i=0; i<all_groups.length; i++) {
+                        var option_group = document.createElement('option');
+                        option_group.value = all_groups[i][1];
+                        option_group.textContent = all_groups[i][0];
+                        groups_select.appendChild(option_group);
+                    }
+                })
+            }
+
+            update.addEventListener('click', ()=>{
+                groups_select.innerHTML = '';
+                add_elements();
+            })
+
+            function checksending(){
+                fetch('/get_info').then(response => response.json()).then(info => {
+                if(info['sending']){setTimeout(checksending, 1000)} else {
+                    send.style.backgroundColor = '#0077FF';
+                    send.textContent = 'Отправить';
+                }
+            })
+            }
+
+            add_elements();
+
+            send.addEventListener('click', ()=>{
+                if(send.textContent=='Отправить') {
+                    var selected_cooldown = cooldown.value;
+                    var selected_groups = $('#groups').select2('data');
+                    var text_to_send = text.value;
+                    if(isNaN(selected_cooldown) || isNaN(parseFloat(selected_cooldown)) || Number(selected_cooldown)<0) {
+                        alert('Вы не ввели правильную задержку');
+                        return;
+                    }
+                    if($('#groups option:selected').length==0) {
+                        alert('Вы не выбрали группы');
+                        return;
+                    }
+                    if(text_to_send.trim()=='') {
+                        alert('Вы не ввели текст');
+                        return;
+                    }
+                    send.style.backgroundColor = '#cc1f00';
+                    send.textContent = 'Остановить';
+                    fetch('/send_messages', 
+                        {
+                            method:'POST', 
+                            body: JSON.stringify({
+                                groups: selected_groups,
+                                cooldown: selected_cooldown,
+                                text: text_to_send
+                            })
+                        }
+                    ).then(response => response.json()).then(r => {
+                        send.style.backgroundColor = '#0077FF';
+                        send.textContent = 'Отправить';
+                    })
+                } else {
+                    fetch('/stop_sending')
+                    .then(response => response.json()).then(r => {
+                        send.style.backgroundColor = '#0077FF';
+                        send.textContent = 'Отправить';
+                    })
+                }
+
+            })
+
+            fetch('/get_info').then(response => response.json()).then(info => {
+                cooldown.value = info['cooldown'];
+                text.value = info['text'];
+                if(info['sending']) {
+                    send.style.backgroundColor = '#cc1f00';
+                    send.textContent = 'Остановить';
+                    checksending();
+                }
+            })
+        </script>
+    </body>
+</html>
